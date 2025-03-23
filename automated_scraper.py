@@ -59,32 +59,27 @@ def main():
         print(f"Error importing required modules: {e}")
         sys.exit(1)
     
-    # Get current month and year
+    # Get current month and year from system date
     current_date = date.today()
     year = current_date.year
     month = current_date.month
+    day = current_date.day
     
-    # Override for testing environments that have incorrect system dates
-    if year >= 2025:
-        print(f"⚠️ WARNING: System date shows year {year}, which is in the future.")
-        print(f"⚠️ This appears to be a test environment with incorrect date settings.")
-        
-        # If we detect a future year, use the last known valid year (2024)
-        print(f"⚠️ Resetting to a safe date in 2024")
-        year = 2024
-        # Keep the current month for reasonable testing
-        month = max(1, min(month, 12))
-        print(f"✓ Using year={year}, month={month} instead")
+    # We'll use the system date directly, even if it's 2025
+    # Just log information about the date we're using
+    print(f"System date: {current_date.year}-{current_date.month:02d}-{current_date.day:02d}")
+    print(f"Using system year and month: {year}-{month:02d}")
+    print(f"Will only generate URLs up to current day: {day}")
     
     # Yesterday's date (to check for new content)
-    real_yesterday = current_date - timedelta(days=1)
-    yesterday_formatted = real_yesterday.strftime("%Y-%m-%d")
+    yesterday = current_date - timedelta(days=1)
+    yesterday_formatted = yesterday.strftime("%Y-%m-%d")
     print(f"Yesterday's date: {yesterday_formatted}")
     
     print(f"\nChecking for new content for {month}/{year}")
     print(f"Note: Will only generate URLs up to today ({current_date.day} {current_date.strftime('%B')} {year})")
     
-    # Generate URLs for current month
+    # Generate URLs for current month up to today
     try:
         all_urls = generate_urls_for_month(year, month)
         print(f"Generated {len(all_urls)} URLs for {month}/{year}")
@@ -108,16 +103,10 @@ def main():
     if not all_urls:
         print("⚠️ No URLs generated for current month. Trying alternative approach...")
         try:
-            # Try to generate a URL for yesterday, but ensure it's not in the future
-            if real_yesterday <= current_date:
-                # Use the adjusted year for consistency
-                adjusted_yesterday = date(year, real_yesterday.month, real_yesterday.day)
-                yesterday_url = f"https://www.indiabix.com/current-affairs/{adjusted_yesterday.strftime('%Y-%m-%d')}"
-                all_urls = [yesterday_url]
-                print(f"Adding yesterday's URL: {yesterday_url}")
-            else:
-                print("⚠️ Even yesterday appears to be in the future. No valid URLs to process.")
-                sys.exit(0)
+            # Try to generate a URL for yesterday
+            yesterday_url = f"https://www.indiabix.com/current-affairs/{yesterday_formatted}"
+            all_urls = [yesterday_url]
+            print(f"Adding yesterday's URL: {yesterday_url}")
         except Exception as e:
             print(f"⚠️ Error generating alternative URL: {e}")
     
