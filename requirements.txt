@@ -4,3 +4,4 @@ python-dotenv==1.0.0
 beautifulsoup4==4.12.2
 requests==2.31.0
 deep-translator==1.11.4
+tqdm
