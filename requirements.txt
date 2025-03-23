@@ -1,7 +1,7 @@
+requests==2.31.0
 mysql-connector-python==9.2.0
 pymongo==4.3.3
-python-dotenv==1.0.0
 beautifulsoup4==4.12.2
-requests==2.31.0
 deep-translator==1.11.4
-tqdm
+python-dotenv==1.0.0
+tqdm==4.66.1 
