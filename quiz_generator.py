@@ -12,16 +12,16 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # MongoDB Configuration
-MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017/")
+MONGO_URI = os.getenv("MONGO_URI")
 mongo_client = pymongo.MongoClient(MONGO_URI)
-db = mongo_client["CurrentAffairs"]
-questions_collection = db["Questions"]
+db = mongo_client["CurrentAffairss"]
+questions_collection = db["Questionss"]
 
 # MySQL Configuration
-MYSQL_HOST = os.getenv("MYSQL_HOST", "191.101.230.154")
-MYSQL_USER = os.getenv("MYSQL_USER", "u983304183_que1admin")
-MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD", "Ajayahir@1308")
-MYSQL_DATABASE = os.getenv("MYSQL_DATABASE", "u983304183_que1")
+MYSQL_HOST = os.getenv("MYSQL_HOST")
+MYSQL_USER = os.getenv("MYSQL_USER")
+MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD")
+MYSQL_DATABASE = os.getenv("MYSQL_DATABASE")
 
 def create_mysql_connection():
     """Create and return a MySQL connection"""
