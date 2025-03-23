@@ -10,6 +10,7 @@ import os
 import random
 from datetime import datetime, date
 from dotenv import load_dotenv
+import re
 
 # Load environment variables
 load_dotenv()
@@ -29,15 +30,41 @@ def process_url_safely(url, connection=None, max_retries=3):
     from db_utils import get_connection, close_connections
     from custom_scraper import process_url
     
-    # Normalize URL - remove trailing slash if present
-    if url.endswith('/'):
-        url = url[:-1]
+    # Clean the URL to ensure it's properly formatted
+    # Remove trailing slash and any colon that might be from error messages
+    clean_url = url.strip()
+    if clean_url.endswith('/'):
+        clean_url = clean_url[:-1]
+    if clean_url.endswith(':'):
+        clean_url = clean_url[:-1]
+    
+    # Extract the date part to ensure a valid URL format
+    date_match = re.search(r'(\d{4}-\d{2}-\d{2})', clean_url)
+    if date_match:
+        clean_url = f"https://www.indiabix.com/current-affairs/{date_match.group(1)}"
+        if url != clean_url:
+            print(f"🔧 Fixed URL format: {url} → {clean_url}")
+            url = clean_url
+    else:
+        print(f"⚠️ Could not find a valid date in URL: {url}")
+        return False
         
     # Verify URL format
     if not url.startswith('https://www.indiabix.com/current-affairs/'):
         print(f"❌ Invalid URL format: {url}")
         return False
         
+    # Skip future dates
+    try:
+        date_part = url.split('/')[-1]
+        url_date = datetime.strptime(date_part, '%Y-%m-%d').date()
+        current_date = date.today()
+        if url_date > current_date:
+            print(f"⚠️ Skipping future date: {url_date}")
+            return False
+    except Exception as e:
+        print(f"⚠️ Error parsing date from URL: {str(e)}")
+    
     retry_count = 0
     connection_to_use = connection
     
