@@ -45,12 +45,13 @@ def generate_url(year, month, day=None):
     """
     urls = []
     
-    # Check for future dates
+    # Use current date from system for validation
     current_date = date.today()
+    print(f"System date being used for validation: {current_date}")
     
     # If day is provided, generate URL for specific date
     if day:
-        # Skip if future date
+        # Skip if future date (comparing with system date)
         target_date = date(year, month, day)
         if target_date > current_date:
             print(f"⚠️ Skipping future date: {target_date}")
@@ -75,9 +76,11 @@ def generate_url(year, month, day=None):
         
         # Generate URLs for each day in the month
         for day in range(1, days_in_month + 1):
-            # Skip if future date - be more precise about comparing with current date
+            # Skip if future date - be precise with system date comparison
             try:
                 target_date = date(year, month, day)
+                
+                # Only include dates up to today based on system date
                 if target_date > current_date:
                     print(f"⚠️ Skipping future date: {target_date}")
                     continue
@@ -90,6 +93,10 @@ def generate_url(year, month, day=None):
                 continue
     
     print(f"✅ Generated {len(urls)} valid URLs up to current date ({current_date})")
+    
+    # Sort URLs by date (newest first) to prioritize recent content
+    urls.sort(reverse=True)
+    
     return urls
 
 def process_question(args):
