@@ -186,6 +186,11 @@ def process_url(url, conn, retry_count=0, max_retries=3):
         bool: True if processing succeeded, False otherwise
     """
     try:
+        # Clean the URL to ensure it doesn't have trailing characters
+        if url.endswith('/') or url.endswith(':'):
+            url = url.rstrip('/:')
+            print(f"Cleaned URL: {url}")
+        
         # Extract date from URL
         date_text, date_db = extract_date_from_url(url)
         month_year = extract_month_year_from_url(url)
@@ -232,7 +237,7 @@ def process_url(url, conn, retry_count=0, max_retries=3):
                 print(f"❌ Failed to create or get topic after retry")
                 return False
         
-        # Scrape the content
+        # Scrape the content - make sure we're passing a clean URL
         print(f"🔍 Scraping content from: {url}")
         questions_data = scrape_current_affairs_content(url)
         
@@ -273,7 +278,10 @@ def process_url(url, conn, retry_count=0, max_retries=3):
         return success_count > 0
         
     except Exception as e:
-        print(f"❌ Error processing URL {url}: {str(e)}")
+        error_str = str(e)
+        # Remove any colons from the URL in the error message to prevent confusion
+        clean_error = error_str.replace(f"{url}:", f"{url}")
+        print(f"❌ Error processing URL {url}: {clean_error}")
         
         # Retry if not exceeded max retries
         if retry_count < max_retries:
