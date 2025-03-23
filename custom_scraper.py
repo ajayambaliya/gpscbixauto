@@ -75,7 +75,7 @@ def generate_url(year, month, day=None):
         
         # Generate URLs for each day in the month
         for day in range(1, days_in_month + 1):
-            # Skip if future date
+            # Skip if future date - be more precise about comparing with current date
             try:
                 target_date = date(year, month, day)
                 if target_date > current_date:
@@ -89,6 +89,7 @@ def generate_url(year, month, day=None):
                 print(f"⚠️ Invalid date: {year}-{month:02d}-{day:02d}, {str(e)}")
                 continue
     
+    print(f"✅ Generated {len(urls)} valid URLs up to current date ({current_date})")
     return urls
 
 def process_question(args):
