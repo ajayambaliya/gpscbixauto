@@ -15,9 +15,9 @@ load_dotenv()
 # MongoDB Configuration
 MONGO_URI = os.getenv("MONGO_URI")
 mongo_client = pymongo.MongoClient(MONGO_URI)
-db = mongo_client["CurrentAffairs"]
-scraped_urls_collection = db["ScrapedURLs"]  # Collection for tracking scraped URLs
-questions_collection = db["Questions"]
+db = mongo_client["CurrentAffairss"]
+scraped_urls_collection = db["ScrapedURLss"]  # Collection for tracking scraped URLs
+questions_collection = db["Questionss"]
 
 # MySQL Configuration
 MYSQL_HOST = os.getenv("MYSQL_HOST")
