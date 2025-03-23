@@ -266,38 +266,58 @@ def process_url(url, conn, retry_count=0, max_retries=3):
         
         return False
 
-def process_urls_parallel(urls_to_scrape, main_conn):
+def process_urls_parallel(urls, connection=None):
     """
-    Process multiple URLs in parallel
+    Process a list of URLs in parallel
     
     Args:
-        urls_to_scrape (list): List of URLs to scrape
-        main_conn: Main MySQL connection
+        urls (list): List of URLs to process
+        connection: MySQL connection (optional)
         
     Returns:
         int: Number of successfully processed URLs
     """
-    total_urls = len(urls_to_scrape)
-    success_count = 0
-    
-    # For each URL, we need to get skill and topic info first
-    # We can't parallelize this part due to database dependencies
-    for i, url in enumerate(urls_to_scrape, 1):
-        print(f"\n🔍 Processing URL {i}/{total_urls}: {url}")
+    if not urls:
+        print("No URLs to process")
+        return 0
         
-        # Make sure we have a valid connection for each URL
-        if main_conn is None or not hasattr(main_conn, 'is_connected') or not main_conn.is_connected():
-            print("ℹ️ Connection not valid, getting a new one...")
-            main_conn = get_connection()
-            if not main_conn:
-                print("❌ Failed to get a valid database connection, skipping URL...")
-                continue
-                
-        # Process the URL with a valid connection
-        success = process_url(url, main_conn)
-        if success:
-            success_count += 1
+    # Use provided connection or create a new one
+    conn = connection
+    if not conn:
+        conn = get_connection()
+        if not conn:
+            print("❌ Failed to establish MySQL connection")
+            return 0
     
+    success_count = 0
+    total_urls = len(urls)
+    
+    print(f"🔄 Processing {total_urls} URLs in parallel with {MAX_WORKERS} workers")
+    
+    try:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+            # Submit each URL for processing
+            future_to_url = {executor.submit(process_url, url, conn): url for url in urls}
+            
+            # Create a progress bar
+            with tqdm(total=total_urls, desc="Processing URLs", unit="url") as progress:
+                for future in concurrent.futures.as_completed(future_to_url):
+                    url = future_to_url[future]
+                    try:
+                        result = future.result()
+                        if result:
+                            success_count += 1
+                            # Mark URL as processed if successful
+                            mark_url_as_processed(url)
+                    except Exception as e:
+                        print(f"❌ Error processing URL {url}: {str(e)}")
+                    finally:
+                        progress.update(1)
+    
+    except Exception as e:
+        print(f"❌ Error during parallel processing: {str(e)}")
+    
+    print(f"✅ Successfully processed {success_count}/{total_urls} URLs")
     return success_count
 
 def main():
@@ -472,6 +492,22 @@ def get_scraping_stats():
                 pass
     
     return stats
+
+def generate_urls_for_month(year, month):
+    """
+    Generate URLs for a specific month and year
+    
+    This function is a wrapper around generate_url to make it more accessible
+    when importing from other scripts.
+    
+    Args:
+        year (int): Year (e.g., 2024)
+        month (int): Month (1-12)
+        
+    Returns:
+        list: List of URLs for each day in the month
+    """
+    return generate_url(year, month)
 
 if __name__ == "__main__":
     main() 
