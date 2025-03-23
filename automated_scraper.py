@@ -13,16 +13,6 @@ from dotenv import load_dotenv
 # Load local .env file if running locally
 load_dotenv()
 
-# Import our custom modules
-try:
-    from custom_scraper import generate_urls_for_month, process_urls_parallel
-    from db_utils import get_connection, close_connections, is_url_already_scraped, mark_url_as_processed
-    from practice_set_creator import create_practice_set_for_month
-except ImportError as e:
-    print(f"Error importing required modules: {e}")
-    sys.exit(1)
-
-
 def main():
     """Main function for automated scraping"""
     
@@ -30,6 +20,16 @@ def main():
     print("AUTOMATED SCRAPER - RUNNING ON GITHUB ACTIONS")
     print(f"Current date and time: {datetime.now()}")
     print("=" * 50)
+    
+    # Import our custom modules
+    try:
+        from custom_scraper import generate_urls_for_month, process_urls_parallel
+        from db_utils import get_connection, close_connections, is_url_already_scraped
+        from practice_sets import create_practice_set, add_questions_to_practice_set
+        from practice_set_creator import create_practice_set_for_month
+    except ImportError as e:
+        print(f"Error importing required modules: {e}")
+        sys.exit(1)
     
     # Get current month and year
     current_date = date.today()
@@ -42,14 +42,24 @@ def main():
     print(f"\nChecking for new content for {month}/{year}")
     
     # Generate URLs for current month
-    all_urls = generate_urls_for_month(year, month)
+    try:
+        all_urls = generate_urls_for_month(year, month)
+        print(f"Generated {len(all_urls)} URLs for {month}/{year}")
+    except Exception as e:
+        print(f"Error generating URLs: {e}")
+        sys.exit(1)
+        
     new_urls = []
     
     # Check which URLs haven't been scraped yet
-    for url in all_urls:
-        # Only scrape new URLs
-        if not is_url_already_scraped(url):
-            new_urls.append(url)
+    try:
+        for url in all_urls:
+            # Only scrape new URLs
+            if not is_url_already_scraped(url):
+                new_urls.append(url)
+    except Exception as e:
+        print(f"Error checking URLs: {e}")
+        sys.exit(1)
     
     print(f"Found {len(all_urls)} total URLs for current month")
     print(f"Found {len(new_urls)} new URLs to scrape")
@@ -83,21 +93,28 @@ def main():
         # Create practice set for the month if we scraped new content
         if success_count > 0:
             print("\nCreating practice set for the month...")
-            result = create_practice_set_for_month(year, month)
-            if result:
-                print("Practice set created successfully!")
-            else:
-                print("Failed to create practice set")
+            try:
+                result = create_practice_set_for_month(year, month)
+                if result:
+                    print("Practice set created successfully!")
+                else:
+                    print("Failed to create practice set")
+            except Exception as e:
+                print(f"Error creating practice set: {e}")
         
     except Exception as e:
         print(f"An error occurred: {str(e)}")
     finally:
         # Close connections
         if mysql_conn:
-            close_connections(mysql_conn)
+            try:
+                close_connections(mysql_conn)
+                print("Database connections closed")
+            except Exception as e:
+                print(f"Error closing connections: {e}")
     
     print("\nAutomated scraping completed!")
     
 
 if __name__ == "__main__":
-    main()
+    main() 
