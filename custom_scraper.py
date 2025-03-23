@@ -45,13 +45,22 @@ def generate_url(year, month, day=None):
     """
     urls = []
     
+    # Check for future dates
+    current_date = date.today()
+    
     # If day is provided, generate URL for specific date
     if day:
+        # Skip if future date
+        target_date = date(year, month, day)
+        if target_date > current_date:
+            print(f"⚠️ Skipping future date: {target_date}")
+            return urls
+            
         formatted_date = f"{year}-{month:02d}-{day:02d}"
-        url = f"https://www.indiabix.com/current-affairs/{formatted_date}/"
+        url = f"https://www.indiabix.com/current-affairs/{formatted_date}"
         urls.append(url)
     else:
-        # If day is not provided, generate URLs for all days in the month
+        # If day is not provided, generate URLs for all days in the month up to today
         # Determine the number of days in the month
         if month == 2:
             # Check for leap year
@@ -66,9 +75,19 @@ def generate_url(year, month, day=None):
         
         # Generate URLs for each day in the month
         for day in range(1, days_in_month + 1):
-            formatted_date = f"{year}-{month:02d}-{day:02d}"
-            url = f"https://www.indiabix.com/current-affairs/{formatted_date}/"
-            urls.append(url)
+            # Skip if future date
+            try:
+                target_date = date(year, month, day)
+                if target_date > current_date:
+                    print(f"⚠️ Skipping future date: {target_date}")
+                    continue
+                    
+                formatted_date = f"{year}-{month:02d}-{day:02d}"
+                url = f"https://www.indiabix.com/current-affairs/{formatted_date}"
+                urls.append(url)
+            except ValueError as e:
+                print(f"⚠️ Invalid date: {year}-{month:02d}-{day:02d}, {str(e)}")
+                continue
     
     return urls
 
@@ -508,6 +527,37 @@ def generate_urls_for_month(year, month):
         list: List of URLs for each day in the month
     """
     return generate_url(year, month)
+
+def scrape_current_affairs_content(url):
+    """
+    Wrapper around the scraper module function to improve error handling.
+    This will help catch and handle errors like 'bytearray index out of range'.
+    
+    Args:
+        url (str): URL to scrape
+        
+    Returns:
+        list: List of question data, or None if error
+    """
+    try:
+        from scraper import scrape_current_affairs_content as original_scraper
+        
+        # Fix URL if it ends with a slash
+        if url.endswith('/'):
+            url = url[:-1]
+            
+        return original_scraper(url)
+    except Exception as e:
+        error_type = type(e).__name__
+        error_message = str(e)
+        print(f"❌ Error in scrape_current_affairs_content: {error_type}: {error_message}")
+        
+        # For specific error types, provide more helpful information
+        if "bytearray index out of range" in error_message:
+            print("ℹ️ This is likely due to an invalid response from the website.")
+            print("ℹ️ The page might not exist or might have a different format than expected.")
+        
+        return None
 
 if __name__ == "__main__":
     main() 
