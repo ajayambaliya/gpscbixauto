@@ -65,16 +65,8 @@ def process_url_safely(url, connection=None, max_retries=3):
             print(f"⚠️ Skipping future date: {url_date} (today is {current_date})")
             return False
             
-        # For testing environments that might have incorrect system dates
-        if url_date.year >= 2025:
-            adjusted_date = date(2024, url_date.month, url_date.day)
-            print(f"⚠️ Adjusting date in URL from {url_date} to {adjusted_date} (year 2025+ detected)")
-            
-            # Create a new URL with the adjusted date
-            new_url = f"https://www.indiabix.com/current-affairs/{adjusted_date.strftime('%Y-%m-%d')}"
-            print(f"🔧 New URL: {new_url}")
-            url = new_url
-            url_date = adjusted_date
+        # Accept 2025 as a valid year since we're using system date
+        # No need to adjust dates anymore
     except Exception as e:
         print(f"⚠️ Error parsing date from URL: {str(e)}")
     
