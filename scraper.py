@@ -117,9 +117,25 @@ def scrape_current_affairs_content(url):
     questions_data = []
     
     try:
-        # Ensure URL doesn't end with a slash
+        # Ensure URL doesn't end with a slash or other characters
         if url.endswith('/'):
             url = url[:-1]
+            
+        # Make sure the URL doesn't have a colon at the end (from error messages)
+        if url.endswith(':'):
+            url = url[:-1]
+            
+        # Validate URL format
+        if not re.match(r'^https://www\.indiabix\.com/current-affairs/\d{4}-\d{2}-\d{2}$', url):
+            print(f"⚠️ URL does not match expected format: {url}")
+            # Try to fix by extracting the date part
+            date_match = re.search(r'(\d{4}-\d{2}-\d{2})', url)
+            if date_match:
+                fixed_url = f"https://www.indiabix.com/current-affairs/{date_match.group(1)}"
+                print(f"🔧 Fixed URL to: {fixed_url}")
+                url = fixed_url
+            
+        print(f"🔍 Attempting to scrape: {url}")
             
         # Random delay to avoid rate limiting
         time.sleep(random.uniform(1, 3))
@@ -135,15 +151,32 @@ def scrape_current_affairs_content(url):
             print(f"Failed to fetch URL: {url}, Status: {response.status_code}")
             return questions_data
         
+        # Check if content exists
+        content_length = len(response.content)
+        if content_length < 1000:  # Very small response is likely an error page
+            print(f"⚠️ Very small response ({content_length} bytes), might be an error page")
+        
         # Parse the content
         soup = BeautifulSoup(response.content, 'html.parser')
+        
+        # Check page title to ensure it's a valid page
+        title = soup.title.string if soup.title else "No title found"
+        if "404" in title or "not found" in title.lower():
+            print(f"⚠️ Page appears to be a 404 page: '{title}'")
+            return questions_data
         
         # Find question divs
         question_divs = soup.select('.bix-div-container')
         
         if not question_divs:
             print(f"No questions found at URL: {url}")
-            return questions_data
+            # Try alternative selectors in case the page structure changed
+            alt_divs = soup.select('div.question-container, div.mcq-container')
+            if alt_divs:
+                print(f"Found {len(alt_divs)} questions using alternative selector")
+                question_divs = alt_divs
+            else:
+                return questions_data
         
         # Process each question
         for div in question_divs:
@@ -212,7 +245,11 @@ def scrape_current_affairs_content(url):
             print("ℹ️ This may be a website response issue. The page might not exist or might be formatted differently.")
             # Try a simpler parsing approach as fallback
             try:
-                simple_response = requests.get(url, headers=headers, timeout=30, verify=False)
+                clean_url = url
+                if clean_url.endswith(':'):
+                    clean_url = clean_url[:-1]
+                
+                simple_response = requests.get(clean_url, headers={'User-Agent': random.choice(USER_AGENTS)}, timeout=30, verify=False)
                 if simple_response.status_code == 200:
                     simple_soup = BeautifulSoup(simple_response.text, 'html.parser')
                     title = simple_soup.title.string if simple_soup.title else "No title found"
@@ -221,8 +258,10 @@ def scrape_current_affairs_content(url):
                         print("ℹ️ This appears to be a 404 page - the content doesn't exist.")
                     elif "current affairs" not in title.lower():
                         print("ℹ️ This doesn't appear to be a Current Affairs page.")
-            except:
-                pass
+                else:
+                    print(f"HTTP Status: {simple_response.status_code}")
+            except Exception as fallback_error:
+                print(f"Fallback also failed: {str(fallback_error)}")
     
     return questions_data
 
