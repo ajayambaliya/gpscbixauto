@@ -1,10 +1,10 @@
 name: Daily Scraping Job
 
-on:
-  schedule:
+#on:
+ # schedule:
     # Run at 8:00 AM IST (2:30 UTC) every day
-    - cron: '30 2 * * *'
-  workflow_dispatch:  # Allows manual triggering for testing
+    #- cron: '30 2 * * *'
+  #workflow_dispatch:  # Allows manual triggering for testing
 
 jobs:
   scrape-and-create-sets:
